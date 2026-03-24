@@ -3,17 +3,33 @@ import requests
 import pandas as pd
 import matplotlib.pyplot as plt
 
-st.subheader("Run Automated Tests")
+st.title("QA Automation Dashboard 🚀")
 
-results_data = []
+menu = st.sidebar.selectbox("Menu", [
+    "Run Tests",
+    "API Testing",
+    "Test History"
+])
+if menu == "Run Tests":
 
-if "results_data" not in st.session_state:
-    st.session_state.results_data = []
+    st.subheader("Run Automated Tests")
 
-if st.button("Run Tests"):
-    try:
-        response = requests.get("http://localhost:8000/run-tests/")
-        data = response.json()
+    if "results_data" not in st.session_state:
+        st.session_state.results_data = []
+
+    if "history" not in st.session_state:
+        st.session_state.history = []
+
+    if st.button("Run Tests"):
+
+        # ✅ MOCK DATA (for Streamlit Cloud)
+        data = {
+            "results": [
+                {"test": "Valid Login", "status": "Pass"},
+                {"test": "Invalid Login", "status": "Fail"},
+                {"test": "Empty Fields", "status": "Pass"}
+            ]
+        }
 
         st.session_state.results_data = []
 
@@ -23,10 +39,7 @@ if st.button("Run Tests"):
         for result in data["results"]:
             st.write(f"Test: {result['test']}")
 
-            results_data.append({
-                "Test Name": result["test"],
-                "Status": result["status"]
-            })
+            st.session_state.results_data.append(result)
 
             if result["status"] == "Pass":
                 st.success("Pass ✅")
@@ -35,66 +48,52 @@ if st.button("Run Tests"):
                 st.error("Fail ❌")
                 fail_count += 1
 
-                if "screenshot" in result:
-                    st.image(result["screenshot"], caption="Failure Screenshot")
+        # Save to history
+        st.session_state.history.extend(st.session_state.results_data)
 
-        # 📊 Dashboard Section
-        st.subheader("Test Report Dashboard")
-
+        # 📊 Dashboard
+        st.subheader("Dashboard")
         st.write(f"✅ Passed: {pass_count}")
         st.write(f"❌ Failed: {fail_count}")
 
-        # Pie Chart
-        labels = ['Pass', 'Fail']
-        sizes = [pass_count, fail_count]
-
         fig, ax = plt.subplots()
-        ax.pie(sizes, labels=labels, autopct='%1.1f%%')
-        ax.set_title("Test Results Distribution")
-
+        ax.pie([pass_count, fail_count], labels=["Pass", "Fail"], autopct='%1.1f%%')
         st.pyplot(fig)
 
-        fig2, ax2 = plt.subplots()
-        ax2.bar(labels, sizes)
-        ax2.set_title("Pass vs Fail Count")
-        st.pyplot(fig2)
+    # 📥 Download Option (OUTSIDE BUTTON)
+    if st.session_state.results_data:
+        df = pd.DataFrame(st.session_state.results_data)
 
-    except Exception as e:
-        st.error(f"Error: {e}")
+        st.download_button(
+            label="Download Results",
+            data=df.to_csv(index=False),
+            file_name="test_results.csv",
+            mime="text/csv"
+        )
+elif menu == "API Testing":
+    st.subheader("API Testing")
 
-if st.session_state.results_data:
-    df = pd.DataFrame(st.session_state.results_data)
+    url = st.text_input("API URL", "https://jsonplaceholder.typicode.com/posts/1")
+    method = st.selectbox("Method", ["GET", "POST"])
 
-    st.download_button(
-        label="Download Results",
-        data=df.to_csv(index=False),
-        file_name="test_results.csv",
-        mime="text/csv"
-    )
-    
-st.subheader("API Testing")
+    if st.button("Test API"):
+        try:
+            if method == "GET":
+                res = requests.get(url)
+            else:
+                res = requests.post(url)
 
-url = st.text_input("Enter API URL")
-method = st.selectbox("Method", ["GET", "POST"])
+            st.write(f"Status Code: {res.status_code}")
+            st.json(res.json())
 
-if st.button("Test API"):
-    response = requests.post(
-        "http://localhost:8000/api-test/",
-        json={"url": url, "method": method}
-    )
+        except Exception as e:
+            st.error(f"Error: {e}")
+            
+elif menu == "Test History":
+    st.subheader("Test History")
 
-    data = response.json()
-
-    if "error" in data:
-        st.error(data["error"])
+    if st.session_state.history:
+        df_history = pd.DataFrame(st.session_state.history)
+        st.dataframe(df_history)
     else:
-        st.write("Status Code:", data["status_code"])
-        st.text_area("Response", data["response"])
-
-st.subheader("Test History")
-
-if st.button("Load History"):
-    import sqlite3
-    conn = sqlite3.connect("test_history.db")
-    df = pd.read_sql("SELECT * FROM results", conn)
-    st.dataframe(df)
+        st.info("No test history available.")
