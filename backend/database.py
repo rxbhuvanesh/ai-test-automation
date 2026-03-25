@@ -1,10 +1,13 @@
 import sqlite3
 
-def init_db():
-    conn = sqlite3.connect("test_history.db")
-    c = conn.cursor()
+def get_connection():
+    return sqlite3.connect("test_results.db", check_same_thread=False)
 
-    c.execute("""
+def init_db():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
     CREATE TABLE IF NOT EXISTS results (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         test_name TEXT,

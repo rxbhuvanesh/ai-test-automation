@@ -1,9 +1,0 @@
-streamlit
-requests
-pandas
-matplotlib
-fastapi
-uvicorn
-selenium
-webdriver-manager
-openpyxl
