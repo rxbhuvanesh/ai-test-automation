@@ -3,6 +3,8 @@ import requests
 import pandas as pd
 import matplotlib.pyplot as plt
 
+BASE_URL = "http://127.0.0.1:8000"
+
 st.title("QA Automation 🚀")
 
 menu = st.sidebar.selectbox("Menu", [
@@ -25,7 +27,7 @@ if menu == "Run Tests":
 
     if st.button("Run Tests"):
 
-        response = requests.get("http://54.210.81.25:8000/run-tests")
+        response = requests.get(f"{BASE_URL}/run-tests")
 
         if response.status_code == 200:
             data = response.json()
@@ -91,7 +93,7 @@ elif menu == "API Testing":
     if st.button("Test API"):
 
         response = requests.post(
-            "http://localhost:8000/api-test",
+            f"{BASE_URL}/api-test",
             json={"url": url, "method": method}
         )
 
@@ -105,7 +107,7 @@ elif menu == "Test History":
 
     st.subheader("Test History")
 
-    response = requests.get("http://localhost:8000/history")
+    response = requests.get(f"{BASE_URL}/history")
     data = response.json()
 
     df = pd.DataFrame(data["history"])
